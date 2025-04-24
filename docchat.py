@@ -39,6 +39,17 @@ def llm(messages, temperature=1):
 
 
 def load_text(filepath_or_url):
+    """
+    Loads the text from an inputted document."
+    
+    Examples:
+        >>> load_text('exdocs/example.txt')
+        'This is an example txt file.'
+        >>> load_text('exdocs/example.pdf')
+        'This is an example pdf ﬁle. '
+        >>> load_text('exdocs/example.html')
+        'This is an example html file.'
+    """
     import requests
     from bs4 import BeautifulSoup
     from PyPDF2 import PdfReader
@@ -57,7 +68,7 @@ def load_text(filepath_or_url):
                 reader = PdfReader(fin)
                 text = ''
                 for page in reader.pages:
-                    text += page.extract_text() + "\n"
+                    text += page.extract_text()
 
 
         except PdfReadError:
@@ -65,11 +76,16 @@ def load_text(filepath_or_url):
 
 
     except FileNotFoundError:
-        # FOR HTML FILES/LINKS  
-        r = requests.get(args.filename)
-        html = r.text
-        soup = BeautifulSoup(html, features='lxml')
-        text = soup.text
+        try:  
+            r = requests.get(filepath_or_url)
+            html = r.text
+            soup = BeautifulSoup(html, features='lxml')
+            text = soup.text
+        except requests.exceptions.MissingSchema:
+            with open(filepath_or_url, 'r') as fin:
+                html = fin.read()
+                soup = BeautifulSoup(html, features="lxml")
+                text = soup.text
 
     return text
 
