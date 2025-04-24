@@ -27,13 +27,13 @@ def llm(messages, temperature=1):
     return chat_completion.choices[0].message.content
 
 
-def chunk_document(text, max_chunk_size=500, overlap=50):
+def chunk_text_by_words(text, max_words=100, overlap=50):
     """
     Splits a text document into overlapping chunks for RAG.
 
     Examples:
         >>> text = "abcdefghijklmnopqrstuvwxyz"
-        >>> chunks = chunk_document(text, max_chunk_size=10, overlap=2)
+        >>> chunks = chunk_text_by_words(text, max_words=10, overlap=2)
         >>> for chunk in chunks:
         ...     print(chunk)
         abcdefghij
@@ -41,28 +41,28 @@ def chunk_document(text, max_chunk_size=500, overlap=50):
         qrstuvwxyz
 
         >>> text = "Hello world!"
-        >>> chunk_document(text, max_chunk_size=5, overlap=0)
+        >>> chunk_text_by_words(text, max_words=5, overlap=0)
         ['Hello', ' worl', 'd!']
 
         >>> text = "1234567890"
-        >>> chunk_document(text, max_chunk_size=4, overlap=1)
+        >>> chunk_text_by_words(text, max_words=4, overlap=1)
         ['1234', '4567', '7890']
 
-        >>> chunk_document("", max_chunk_size=10, overlap=2)
+        >>> chunk_text_by_words("", max_words=10, overlap=2)
         []
     """
-    if max_chunk_size <= overlap:
-        raise ValueError("max_chunk_size must be greater than overlap")
+    if max_words <= overlap:
+        raise ValueError("max_words must be greater than overlap")
 
     chunks = []
     start = 0
     text_length = len(text)
 
     while start + overlap < text_length:
-        end = min(start + max_chunk_size, text_length)
+        end = min(start + max_words, text_length)
         chunk = text[start:end]
         chunks.append(chunk)
-        start += max_chunk_size - overlap  # slide window
+        start += max_words - overlap  # slide window
 
     return chunks
 
@@ -72,29 +72,56 @@ from nltk.corpus import stopwords
 import nltk
 nltk.download('stopwords')
 
-def score_chunk_relevance(chunk: str, query: str) -> float:
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import nltk
+import re
+
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def score_chunks(chunk: str, query: str) -> float:
     """
-    Scores the relevance of a text chunk to a user query using Jaccard similarity,
-    with stopword removal using NLTK and regex-based tokenization.
+    Scores the relevance of a text chunk to a user query using Jaccard similarity
+    over lemmatized, non-stopword tokens.
 
     Examples:
-        >>> round(score_chunk_relevance("Python is a programming language.", "What is Python?"), 2)
-        0.5
+        >>> round(score_chunks("Python is a programming language.", "What is Python?"), 2)
+        0.33
 
-        >>> round(score_chunk_relevance("Bananas are yellow fruits.", "What is quantum mechanics?"), 2)
+        >>> round(score_chunks("Bananas are yellow fruits.", "What is quantum mechanics?"), 2)
         0.0
 
-        >>> round(score_chunk_relevance("The mitochondria is the powerhouse of the cell.", "What is the mitochondria?"), 2)
-        0.5
+        >>> round(score_chunks("The mitochondria is the powerhouse of the cell.", "What is the mitochondria?"), 2)
+        0.33
     """
-    stop_words = set(stopwords.words('english'))
 
-    def tokenize(text):
+    def preprocess(text):
+        """
+        Tokenizes, lowercases, removes stopwords, and lemmatizes words.
+
+        >>> preprocess("The quick brown fox jumps over the lazy dog.")
+        {'jump', 'fox', 'dog', 'quick', 'lazy', 'brown'}
+
+        >>> preprocess("What is Python?")
+        {'python'}
+
+        >>> preprocess("Bananas are yellow fruits.")
+        {'banana', 'yellow', 'fruit'}
+        """
         tokens = re.findall(r'\b\w+\b', text.lower())
-        return set(token for token in tokens if token not in stop_words)
+        return {
+            lemmatizer.lemmatize(token)
+            for token in tokens
+            if token.isalpha() and token not in stop_words
+        }
 
-    chunk_tokens = tokenize(chunk)
-    query_tokens = tokenize(query)
+    chunk_tokens = preprocess(chunk)
+    query_tokens = preprocess(query)
 
     if not chunk_tokens or not query_tokens:
         return 0.0
@@ -105,57 +132,77 @@ def score_chunk_relevance(chunk: str, query: str) -> float:
     return len(intersection) / len(union)
 
 
-def score_chunks(chunks, query):
+import nltk
+from nltk.tokenize import sent_tokenize
+
+import string
+from nltk.tokenize import sent_tokenize
+from nltk.corpus import stopwords
+
+def find_relevant_chunks(text, query, num_chunks=3):
     """
-    Scores the relevance of a list of chunks to a query using overlap of lemmatized, non-stopword tokens.
+    Find the most relevant chunks from the input text based on a query.
 
-    >>> round(score_chunks(["Python is a programming language.", "The mitochondria is the powerhouse of the cell."], "What is Python?"), 2)
-    0.33
-    >>> round(score_chunks(["Python is a programming language.", "The mitochondria is the powerhouse of the cell."], "What is the mitochondria?"), 2)
-    0.33
-    >>> round(score_chunks(["The mitochondria is the powerhouse of the cell."], "What is the powerhouse of the cell?"), 2)
-    0.5
+    This function splits the text into sentences, scores each sentence's 
+    relevance to the query, and returns the top 'num_chunks' most relevant 
+    sentences.
+
+    Args:
+        text (str): The input text to be searched.
+        query (str): The query to find relevant chunks for.
+        num_chunks (int, optional): The number of relevant chunks to return. Defaults to 3.
+
+    Returns:
+        list: A list of the top 'num_chunks' most relevant chunks from the text.
+
+    Examples:
+        >>> text = "This is a test document. It contains multiple sentences. We are trying to find relevant chunks based on a query."
+        >>> query = "relevant chunks"
+        >>> find_relevant_chunks(text, query, num_chunks=3)
+        ['We are trying to find relevant chunks based on a query', 'This is a test document', 'It contains multiple sentences']
+
+        >>> text = "Python is a programming language. It is widely used for web development and data science."
+        >>> query = "web development"
+        >>> find_relevant_chunks(text, query, num_chunks=2)
+        ['It is widely used for web development and data science', 'Python is a programming language']
+
+        >>> text = "The mitochondria is the powerhouse of the cell. It generates energy for the cell."
+        >>> query = "mitochondria"
+        >>> find_relevant_chunks(text, query, num_chunks=1)
+        ['The mitochondria is the powerhouse of the cell']
     """
+    # Tokenize the text into sentences
+    sentences = sent_tokenize(text)
 
-    from nltk.stem import WordNetLemmatizer
-    from nltk.corpus import stopwords
-    import nltk
-    import re
+    # Remove stopwords for query comparison but keep sentence structure intact
+    stop_words = set(stopwords.words("english"))
+    punctuations = set(string.punctuation)
+    
+    def clean_for_matching(text):
+        """Clean text for matching by removing stopwords and punctuation"""
+        words = text.split()
+        return [word.lower() for word in words if word.lower() not in stop_words and word not in punctuations]
 
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('wordnet')
+    # Clean the query for matching
+    cleaned_query = clean_for_matching(query)
 
-    stop_words = set(stopwords.words('english'))
-    lemmatizer = WordNetLemmatizer()
+    def score_sentence(sentence):
+        """Score the sentence based on matching words with the cleaned query"""
+        cleaned_sentence = clean_for_matching(sentence)
+        return sum(1 for word in cleaned_sentence if word in cleaned_query)
 
-    def preprocess(text):
-        """
-        Preprocesses a text by lowercasing, tokenizing, removing stopwords and non-alphabetic tokens,
-        and lemmatizing the remaining tokens.
-        """
-        tokens = re.findall(r'\b\w+\b', text.lower())
-        return {
-            lemmatizer.lemmatize(token)
-            for token in tokens
-            if token.isalpha() and token not in stop_words
-    }
+    # Score each sentence and sort by relevance
+    scored_sentences = [(sentence, score_sentence(sentence)) for sentence in sentences]
 
-    # Preprocess the query text
-    query_lemmas = preprocess(query)
+    # Sort sentences by score, highest first
+    scored_sentences.sort(key=lambda x: x[1], reverse=True)
 
-    # If no meaningful lemmatized tokens in the query, return a score of 0 for all chunks
-    if not query_lemmas:
-        return [0.0] * len(chunks)
+    # Return the top 'num_chunks' sentences, keeping the original structure, and strip trailing punctuation for comparison
+    top_chunks = [scored_sentences[i][0] for i in range(min(num_chunks, len(scored_sentences)))]
 
-    scores = []
-    for chunk in chunks:
-        chunk_lemmas = preprocess(chunk)
-        overlap = chunk_lemmas.intersection(query_lemmas)
-        score = len(overlap) / len(query_lemmas)
-        scores.append(score)
+    # Strip trailing punctuation for final result comparison
+    return [sentence.rstrip(string.punctuation) if sentence.endswith('.') else sentence for sentence in top_chunks]
 
-    return scores
 
 import pprint
 if __name__ == '__main__':
@@ -177,3 +224,4 @@ if __name__ == '__main__':
         })
         print('result=', result)
         pprint.pprint(messages)
+
