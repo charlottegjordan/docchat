@@ -1,3 +1,4 @@
+# PRELIM STUFF
 import readline
 import nltk
 nltk.download('stopwords')
@@ -5,7 +6,7 @@ nltk.download('stopwords')
 from dotenv import load_dotenv
 load_dotenv()
 
-"""
+
 import argparse
 parser = argparse.ArgumentParser(
     prog='docsum',
@@ -14,8 +15,9 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('filename')
 args = parser.parse_args()
-"""
 
+
+# SUPPLEMENTARY FUNCTIONS
 def llm(messages, temperature=1):
     '''
     This function is my interface for calling the LLM.
@@ -120,6 +122,7 @@ def chunk_text_by_words(text, max_words=5, overlap=2):
 
     return chunks
 
+
 def score_chunks(chunk: str, query: str) -> float:
     """
     Scores a chunk against a user query using Jaccard similarity of lemmatized word sets
@@ -203,28 +206,77 @@ def find_relevant_chunks(text, query, num_chunks=3, max_words=100, overlap=50):
     return relevant_chunks
 
 
+def split_text(text, max_chunk_size=1000):
+    '''
+    Takes a string as input and returns a list of strings that are all smaller than max chunk size)
+    >>> split_text('abcdefg', max_chunk_size=2)
+    ['ab', 'cd', 'ef', 'g']
+    '''
+    accumulator = []
+    while len(text) > 0:
+        accumulator.append(text[:max_chunk_size])
+        text = text[max_chunk_size:]
+    return accumulator
 
+
+def summarize_text(text):
+    import groq
+    prompt = f"""
+    Summarize the following text in 1-3 sentences.
+
+    {text}
+    """
+    try:
+        output = llm([{"role": "user", "content": prompt}])
+        return output.split('\n')[-1]
+    except groq.APIStatusError:
+        chunks = split_text(text, 10000)
+        print("len(chunks)=", len(chunks))
+        accumulator = []
+        for i, chunk in enumerate(chunks):
+            print('i=', i)
+            summary = summarize_text(chunk)
+            accumulator.append(summary)
+        summarized_text = ' '.join(accumulator)
+        summarized_text = summarize_text(summarized_text)
+        return summarized_text
+
+
+#MAIN FUNCTION
 import pprint
 if __name__ == '__main__':
-
     doc_text = load_text(args.filename)
+    chunks = chunk_text_by_words(doc_text, max_words=100, overlap=50)
 
-    messages = []
-    messages.append({
-        'role': 'system',
-        'content': "You are a helpful assistant. You always speak like a pirate. You always answer in one sentence.",
-    })
+    summary = summarize_text(doc_text)
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant that answers questions about a document. You will be given relevant excerpts for each user question."
+        },
+        {
+            "role": "assistant",
+            "content": f"Here is a summary of the document:\n\n{summary}"
+        }
+    ]
+
     while True:
-        text = input('docchat> ')
+        query = input('docchat> ')
+        if query.strip().lower() in {'exit', 'quit'}:
+            break
+
+        relevant_chunks = find_relevant_chunks(doc_text, query, num_chunks=3)
+        context = "\n---\n".join(relevant_chunks)
+
         messages.append({
             'role': 'user',
-            'content': text,
+            'content': f"Here is the context:\n{context}\n\nNow answer this question:\n{query}"
         })
-        result = llm(messages)
+
+        result = llm(messages, temperature=0)
         messages.append({
             'role': 'assistant',
             'content': result
         })
-        print('result=', result)
-        pprint.pprint(messages)
 
+        pprint.pprint(result)
