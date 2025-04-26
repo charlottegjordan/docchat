@@ -1,6 +1,6 @@
 # docchat: chat with your documents!
 
-![test cases](https://github.com/mikeizbicki/docchat/workflows/tests/badge.svg)
+![test cases](https://github.com/charlottegjordan/docchat/workflows/tests/badge.svg)
 
 Example usage:
 
