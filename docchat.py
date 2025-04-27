@@ -279,4 +279,4 @@ if __name__ == '__main__':
             'content': result
         })
 
-        pprint.pprint(result)
+        print(result)
