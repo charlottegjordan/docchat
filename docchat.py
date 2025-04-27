@@ -1,14 +1,21 @@
 # PRELIM STUFF
 import readline
 import nltk
-from nltk.tokenize import word_tokenize
-from nltk.tokenize import WordPunctTokenizer
 tokenizer = WordPunctTokenizer()
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
 nltk.download('wordnet', quiet=True)
 nltk.download('omw-1.4', quiet=True)
 
+import nltk
+
+def setup_nltk():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt')
+
+setup_nltk()
 from dotenv import load_dotenv
 load_dotenv()
 
