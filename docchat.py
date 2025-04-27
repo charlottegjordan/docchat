@@ -2,6 +2,7 @@
 import readline
 import nltk
 from nltk.tokenize import word_tokenize
+from nltk.tokenize import WordPunctTokenizer
 tokenizer = WordPunctTokenizer()
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
