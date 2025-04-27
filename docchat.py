@@ -1,21 +1,21 @@
 # PRELIM STUFF
 import readline
 import nltk
-nltk.download('punkt')
+
 
 from dotenv import load_dotenv
 load_dotenv()
 
-
+"""
 import argparse
 parser = argparse.ArgumentParser(
-    prog='docsum',
+    prog='docchat',
     description='summarize the input',
     )
 
 parser.add_argument('filename')
 args = parser.parse_args()
-
+"""
 
 # SUPPLEMENTARY FUNCTIONS
 def llm(messages, temperature=1):
@@ -241,7 +241,7 @@ def summarize_text(text):
         summarized_text = summarize_text(summarized_text)
         return summarized_text
 
-
+"""
 #MAIN FUNCTION
 import pprint
 if __name__ == '__main__':
@@ -280,3 +280,4 @@ if __name__ == '__main__':
         })
 
         print(result)
+"""        
