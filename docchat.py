@@ -1,7 +1,6 @@
 # PRELIM STUFF
 import readline
 import nltk
-nltk.download('stopwords')
 
 from dotenv import load_dotenv
 load_dotenv()
