@@ -1,13 +1,10 @@
 # PRELIM STUFF
 import readline
 import nltk
-tokenizer = WordPunctTokenizer()
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
 nltk.download('wordnet', quiet=True)
 nltk.download('omw-1.4', quiet=True)
-
-import nltk
 
 def setup_nltk():
     try:
