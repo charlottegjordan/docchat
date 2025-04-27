@@ -1,6 +1,7 @@
 # PRELIM STUFF
 import readline
 import nltk
+nltk.download('punkt')
 
 from dotenv import load_dotenv
 load_dotenv()
