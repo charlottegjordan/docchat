@@ -1,18 +1,8 @@
 # PRELIM STUFF
 import readline
 import nltk
-nltk.download('punkt', quiet=True)
-nltk.download('stopwords', quiet=True)
-nltk.download('wordnet', quiet=True)
-nltk.download('omw-1.4', quiet=True)
+nltk.download('punkt_tab')
 
-def setup_nltk():
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt')
-
-setup_nltk()
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -150,11 +140,6 @@ def score_chunks(chunk: str, query: str) -> float:
     from nltk.tokenize import word_tokenize
     from nltk.stem import WordNetLemmatizer
     from string import punctuation
-
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
-    nltk.download('wordnet', quiet=True)
-    nltk.download('omw-1.4', quiet=True)
 
     stop_words = set(stopwords.words('english'))
     lemmatizer = WordNetLemmatizer()

@@ -15,9 +15,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-      - name: Ensure punkt is downloaded
-        run: |
-          python -c "import nltk; nltk.download('punkt')"
       - name: Run doctests
         run: |
           python -m doctest docchat.py
