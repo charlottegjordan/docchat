@@ -2,6 +2,7 @@
 import readline
 import nltk
 nltk.download('punkt_tab')
+nltk.download('stopwords')
 
 from dotenv import load_dotenv
 load_dotenv()
