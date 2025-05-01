@@ -2,7 +2,7 @@
 
 ![test cases](https://github.com/charlottegjordan/docchat/workflows/tests/badge.svg)
 
-![docchat demo](example.gif)
+![docchat demo](demo.gif)
 
 The docchat program allows you to input a document and ask an LLM-based chatbot questions about the inputted document. The inputted document can be a PDF, an html link or file, or a txt file.
 
