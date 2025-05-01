@@ -2,6 +2,8 @@
 
 ![test cases](https://github.com/charlottegjordan/docchat/workflows/tests/badge.svg)
 
+The docchat program allows you to input a document and ask an LLM-based chatbot questions about the inputted document. The inputted document can be a PDF, an html link or file, or a txt file.
+
 Example usage:
 
 ```
@@ -13,4 +15,6 @@ The document appears to be written in English.
 docchat>
 ```
 
-To download the requirements...
+## Requirements
+To install the required dependencies for this program, run this command:
+```$ pip3 install -r requirements.txt```
